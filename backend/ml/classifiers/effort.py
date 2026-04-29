@@ -9,8 +9,6 @@ from ml.classifiers.pytorch_base import PyTorchClassifier
 CLIP_MEAN = (0.48145466, 0.4578275, 0.40821073)
 CLIP_STD = (0.26862954, 0.26130258, 0.27577711)
 
-# ViT-L/14 self-attn projections are 1024x1024. Upstream uses r=1023, leaving
-# a rank-1 trainable residual. See YZY-stack/Effort-AIGI-Detection.
 RESIDUAL_RANK = 1
 
 
