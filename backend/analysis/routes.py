@@ -14,6 +14,8 @@ from auth.models import User
 from auth.routes import get_current_user
 from ml.classifiers.base import AIvsHumanClassifier, NYUADClassifier
 from ml.classifiers.cnnspot import CNNSpotClassifier
+from ml.classifiers.effort import EffortClassifier
+from ml.classifiers.npr import NPRClassifier
 from ml.classifiers.demo import DemoClassifier
 
 router = APIRouter(tags=["Analysis"])
@@ -23,6 +25,14 @@ cnnspot_classifier = CNNSpotClassifier(
     "ml/models/CNNSpot/2025_10_22_epoch_best.pth",
     crop_size=224,
     quiet=True
+)
+effort_classifier = EffortClassifier(
+    "ml/models/Effort/effort_clip_L14_trainOn_sdv14.pth",
+    quiet=True,
+)
+npr_classifier = NPRClassifier(
+    "ml/models/NPR/NPR_GenImage_sdv4.pth",
+    quiet=True,
 )
 ai_vs_human_classifier = AIvsHumanClassifier()
 nyuad_classifier = NYUADClassifier()
@@ -86,7 +96,9 @@ async def analyze_image(
     results = {
         "AI_vs_Human": ai_vs_human_classifier.analyze(img),
         "CNNSpot": cnnspot_classifier.analyze(img),
+        "Effort": effort_classifier.analyze(img),
         "Nebula_comb_v3": nebula_comb_v3_classifier.analyze(img, filename=filename),
+        "NPR": npr_classifier.analyze(img),
         "NYUAD": nyuad_classifier.analyze(img),
         "open-X8100": open_x8100_classifier.analyze(img, filename=filename),
     }

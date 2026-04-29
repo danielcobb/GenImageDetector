@@ -4,6 +4,55 @@ import { AuthContext } from "../contexts/AuthContext";
 
 const STORAGE_KEY = "anonymous_history";
 
+const isQuotaError = (err: unknown): boolean =>
+  err instanceof DOMException &&
+  (err.name === "QuotaExceededError" ||
+    err.name === "NS_ERROR_DOM_QUOTA_REACHED");
+
+// localStorage caps around 5 MB per origin. Each history item holds a base64
+// data URL of the analyzed image, which can easily be 2-4 MB. If saving the
+// full history overflows the quota, drop the oldest items first, then fall
+// back to stripping image blobs so at least the metadata survives.
+const persistAnonymousHistory = (history: HistoryItem[]): void => {
+  const tryWrite = (items: HistoryItem[]): boolean => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      return true;
+    } catch (err) {
+      if (!isQuotaError(err)) throw err;
+      return false;
+    }
+  };
+
+  if (tryWrite(history)) return;
+
+  for (let n = history.length - 1; n > 0; n--) {
+    if (tryWrite(history.slice(0, n))) {
+      console.warn(
+        `[history] localStorage quota exceeded; kept ${n} of ${history.length} items`
+      );
+      return;
+    }
+  }
+
+  const stripped = history.map((item, idx) =>
+    idx === 0 ? item : { ...item, image: undefined }
+  );
+  if (tryWrite(stripped)) {
+    console.warn(
+      "[history] localStorage quota exceeded; dropped image previews from older items"
+    );
+    return;
+  }
+
+  console.warn("[history] localStorage quota exceeded; clearing persisted history");
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+};
+
 export const AppProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -38,11 +87,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({
   // Save to localStorage for anonymous users whenever history changes
   useEffect(() => {
     if (authContext?.loading) return;
+    if (authContext?.user) return;
 
-    if (!authContext?.user) {
-      // Save to localStorage only for anonymous users
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
-    }
+    persistAnonymousHistory(history);
   }, [history, authContext?.user, authContext?.loading]);
 
   const loadLocalHistory = () => {
