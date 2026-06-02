@@ -34,6 +34,8 @@ npr_classifier = NPRClassifier(
     "ml/models/NPR/NPR_GenImage_sdv4.pth",
     quiet=True,
 )
+
+# placeholders
 ai_vs_human_classifier = AIvsHumanClassifier()
 nyuad_classifier = NYUADClassifier()
 nebula_comb_v3_classifier = DemoClassifier(seed="nebula")
